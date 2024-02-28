@@ -5,6 +5,7 @@ package-lock.json
 
 # Variables de entorno
 # .env
+# .env.example
 
 # Archivos de configuración
 *.iml

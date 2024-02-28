@@ -18,7 +18,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const connection = mysql.createConnection({
   host: process.env.DB_HOST,
   database: process.env.DB,
-  port:  process.env.DB_PORT,
+  port: process.env.DB_PORT,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
 });
@@ -37,7 +37,7 @@ const destinatario = process.env.DESTINATARIO_EMAIL;
 const cc = process.env.CORREOCC;
 
 const storage = multer.diskStorage({
-  filename: function (res, file, cb) {
+  filename: function (req, file, cb) {
     cb(null, file.originalname);
   },
   destination: function (req, file, cb) {
@@ -47,60 +47,84 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-const enviarCorreoYGuardarDatos = async (req, res, template, correoCC) => {
+const enviarCorreoYGuardarDatos = async (req, res, templateCliente, template, correoCliente, correoCC) => {
   try {
     const { nombre, telefono, email, comentario, divisionEmpresarial, tema, tipo, divisionSeleccionada, ciudad, cv } = req.body;
 
-    // Modificación de strings para cada endpoint
+    // Configuración de strings para diferentes formularios
     const config = {
-      '/enviar-correo/divisiones-empresariales': {
-        from: `"Nuevo Cliente" <${email}>`,
+      '/enviar-correo/plagas': {
+        fromCliente: `"¡Hola" ${nombre}!`,
+        subjectCliente: "Gracias por contactarnos",
+        subject: "Nuevo Cliente desde la Web",
+      },
+      '/enviar-correo/limpieza': {
+        fromCliente: `"¡Hola" ${nombre}!`,
+        subjectCliente: "Gracias por contactarnos",
+        subject: "Nuevo Cliente desde la Web",
+      },
+      '/enviar-correo/jardineria': {
+        fromCliente: `"¡Hola" ${nombre}!`,
+        subjectCliente: "Gracias por contactarnos",
+        subject: "Nuevo Cliente desde la Web",
+      },
+      '/enviar-correo/desinfeccion': {
+        fromCliente: `"¡Hola" ${nombre}!`,
+        subjectCliente: "Gracias por contactarnos",
         subject: "Nuevo Cliente desde la Web",
       },
       '/enviar-correo/at-cliente': {
-        from: `"Nuevo Cliente" <${email}>`,
+        fromCliente: `"¡Hola" ${nombre}!`,
+        subjectCliente: "Gracias por contactarnos",
         subject: "Nuevo Cliente desde la Web",
       },
       '/enviar-correo/at-proveedor': {
-        from: `"Nuevo Cliente" <${email}>`,
+        fromCliente: `"¡Hola" <${nombre}>!`,
+        subjectCliente: "Gracias por contactarnos",
         subject: "Nuevo Cliente desde la Web",
       },
       '/enviar-correo/responsabilidad-social': {
-        from: `"Nuevo Cliente" <${email}>`,
+        fromCliente: `"¡Hola" ${nombre}!`,
+        subjectCliente: "Gracias por contactarnos",
         subject: "Nuevo Cliente desde la Web",
       },
       '/enviar-correo/trabaja-nosotros': {
-        from: `"Nuevo Empleado" <${email}>`,
+        fromCliente: `"¡Hola" ${nombre}!`,
+        subjectCliente: "Gracias por contactarnos",
         subject: "Nuevo Empleado desde la Web",
       },
     };
 
-    // Valida y suprime el número de celular para redirección
     if (telefono.length === 10 && telefono.startsWith("09")) {
       const numeroWhatsApp = "+593" + telefono.substring(1);
       const enlaceWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent("Hola, veo que estás interesado en...")}`;
 
-      const templatePath = path.join(__dirname, 'views', template);
+      // Renderizar el contenido HTML a partir de una plantilla EJS
+      const templatePath = path.join(__dirname, 'views/ecovitali', template);
+      const templatePathCliente = path.join(__dirname, 'views/clientes', templateCliente);
+      
+      // const htmlTemplate = await ejs.renderFile(templatePath, { nombre, telefono, email, comentario, divisionEmpresarial, enlaceWhatsApp, tema, tipo, divisionSeleccionada, ciudad, cv });
       const htmlTemplate = await ejs.renderFile(templatePath, { nombre, telefono, email, comentario, divisionEmpresarial, enlaceWhatsApp, tema, tipo, divisionSeleccionada, ciudad, cv });
+      const htmlTemplateCliente = await ejs.renderFile(templatePathCliente, { nombre, telefono, email, comentario, divisionEmpresarial, enlaceWhatsApp, tema, tipo, divisionSeleccionada, ciudad, cv });
 
-      // Pasa valores de config para cada endpoint
+      const mailOptionsClientes = {
+        from: `"Ecovitali"<${config[req.url].from}>`,
+        to: correoCliente,
+        subject: config[req.url].subjectCliente,
+        html: htmlTemplateCliente,
+      };
+
       const mailOptions = {
-        from: config[req.url].from,
+        from: `"Página Web Ecovitali"<${config[req.url].from}>`,
         to: destinatario,
         cc: correoCC,
         subject: config[req.url].subject,
         html: htmlTemplate,
-      };
+      }
 
-      // Adjunta el archivo solo si es el endpoint '/enviar-correo/trabaja-nosotros'
+      // Adjunta el archivo en caso de que se ejecute el endpoint trabaja con nosotros
       if (req.url === '/enviar-correo/trabaja-nosotros' && req.file) {
-        mailOptions.attachments = [
-          {
-            filename: req.file.originalname,
-            path: path.join(__dirname, 'Cvs', req.file.filename),
-            cid: 'cv',
-          },
-        ];
+        mailOptions.attachments = [{ filename: req.file.originalname, path: path.join(__dirname, 'Cvs', req.file.filename), cid: 'cv' }];
       }
 
       const transporter = nodemailer.createTransport({
@@ -111,13 +135,20 @@ const enviarCorreoYGuardarDatos = async (req, res, template, correoCC) => {
         },
       });
 
-      const info = await transporter.sendMail(mailOptions);
+      // Enviar ambos correos electrónicos simultáneamente
+      await Promise.all([
+        transporter.sendMail(mailOptions),
+        transporter.sendMail(mailOptionsClientes)
+      ]);
 
       let query = '';
       let values = [];
 
       switch (req.url) {
-        case '/enviar-correo/divisiones-empresariales':
+        case '/enviar-correo/plagas':
+        case '/enviar-correo/limpieza':
+        case '/enviar-correo/jardineria':
+        case '/enviar-correo/desinfeccion':
           query = 'INSERT INTO formulario_divisiones_empresariales (nombre, telefono, email, comentario, correo_destino, division_empresarial) VALUES (?, ?, ?, ?, ?, ?)';
           values = [nombre, telefono, email, comentario, destinatario, divisionEmpresarial];
           break;
@@ -166,25 +197,44 @@ const enviarCorreoYGuardarDatos = async (req, res, template, correoCC) => {
   }
 };
 
-app.post('/enviar-correo/divisiones-empresariales', async (req, res) => {
-  await enviarCorreoYGuardarDatos(req, res, 'correo-divisiones.ejs');
+app.post('/enviar-correo/plagas', async (req, res) => {
+  const correoCliente = req.body.email;
+  await enviarCorreoYGuardarDatos(req, res, 'cliente-plagas.ejs', 'correo-plagas.ejs', correoCliente, cc);
+});
+
+app.post('/enviar-correo/limpieza', async (req, res) => {
+  const correoCliente = req.body.email;
+  await enviarCorreoYGuardarDatos(req, res, 'cliente-limpieza.ejs', 'correo-limpieza.ejs', correoCliente);
+});
+
+app.post('/enviar-correo/jardineria', async (req, res) => {
+  const correoCliente = req.body.email;
+  await enviarCorreoYGuardarDatos(req, res, 'cliente-jardineria.ejs', 'correo-jardineria.ejs', correoCliente);
+});
+
+app.post('/enviar-correo/desinfeccion', async (req, res) => {
+  const correoCliente = req.body.email;
+  await enviarCorreoYGuardarDatos(req, res, 'cliente-desinfeccion.ejs', 'correo-desinfeccion.ejs', correoCliente);
 });
 
 app.post('/enviar-correo/at-cliente', async (req, res) => {
-  await enviarCorreoYGuardarDatos(req, res, 'at-cliente.ejs');
+  const correoCliente = req.body.email;
+  await enviarCorreoYGuardarDatos(req, res, 'atencion-clientes.ejs', 'at-cliente.ejs', correoCliente);
 });
 
 app.post('/enviar-correo/at-proveedor', async (req, res) => {
-  await enviarCorreoYGuardarDatos(req, res, 'at-proveedores.ejs');
+  const correoCliente = req.body.email;
+  await enviarCorreoYGuardarDatos(req, res, 'proveedores.ejs', 'at-proveedores.ejs', correoCliente);
 });
 
 app.post('/enviar-correo/responsabilidad-social', async (req, res) => {
-  await enviarCorreoYGuardarDatos(req, res, 'responsabilidad-social.ejs');
+  const correoCliente = req.body.email;
+  await enviarCorreoYGuardarDatos(req, res, 'rse.ejs', 'responsabilidad-social.ejs', correoCliente);
 });
 
 app.post('/enviar-correo/trabaja-nosotros', upload.single('cv'), async (req, res) => {
-  const correoCC = cc;
-  await enviarCorreoYGuardarDatos(req, res, 'trabaja-nosotros.ejs', correoCC);
+  const correoCliente = req.body.email;
+  await enviarCorreoYGuardarDatos(req, res, 'cliente-trabaja-nosotros.ejs', 'trabaja-nosotros.ejs', correoCliente);
 });
 
 app.listen(PORT, () => {

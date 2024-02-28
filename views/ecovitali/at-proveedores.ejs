@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Correo de Contacto</title>
+</head>
+
+<body>
+    <div style="@import url(https://fonts.googleapis.com/css?family=Montserrat:300,400,500,700|Open+Sans:300,400,500,600,700);
+    font-family: 'Montserrat', sans-serif;">
+        <table style="margin:0 auto;">
+            <tbody>
+                <tr style="text-align: center;">
+                    <td>
+                        <a href="https://ecovitali.com/"><img src="https://i.ibb.co/d55sT95/Logo-Ecovitali-Blanco.png"
+                                style="width: 50%; margin-bottom: 10px;"></a>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <img src="https://i.ibb.co/0F5VcR2/banner-proveedor.png" alt="banner-proveedor">
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <table style="margin:0 auto; width: 60%;">
+            <tbody>
+                <tr>
+                    <td style="text-align: center;">
+                        <p style="font-size: 36px; font-weight: 600;">¡Hola, ECOVITALI!</p>
+                        <p style="font-size: 15px;">
+                            Has recibido un mensaje de<b>"Atención a Proveedores"</b> con los siguientes datos:
+                        </p>
+                        <p style="font-size: 15px;"><b>Nombre:</b>
+                            <%= nombre %>
+                        </p>
+                        <p style="font-size: 15px;"><b>Tipo o Categoría de Producto</b>
+                            <%= tipo %>
+                        </p>
+                        <p style="font-size: 15px;"><b>Teléfono:</b>
+                            <%= telefono %>
+                        </p>
+                        <p style="font-size: 15px;"><b>Correo Electrónico:</b>
+                            <%= email %>
+                        </p>
+                        <p style="font-size: 15px;"><b>Mensaje:</b>
+                            <%= comentario %>
+                        </p>
+                        <p style="font-size: 15px;">Puedes contactarlo por correo electrónico o por WhatsApp haciendo
+                            click en el siguiente botón. 👇</p>
+                        <div style="margin-top:2rem;text-align: center; margin-bottom:2rem;">
+                            <a href="<%= enlaceWhatsApp %>" style="padding: 15px;background: #86AE51;color: #fff;cursor:pointer;
+                                border-radius: 6px; text-align: center; text-decoration: none;">Mensaje Directo a
+                                WhatsApp</a>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="text-align: center;">
+                        <img src="https://i.ibb.co/c2QrJvn/banner-divisiones.png" alt="banner-divisiones">
+                    </td>
+                </tr>
+                <tr>
+                    <td style="display: flex; align-items: center; justify-content: space-between; margin-top: 25px;">
+                        <img src="https://i.ibb.co/5sB3HP1/logo-ecovitali-footer.png" alt="logo-ecovitali-footer">
+                        <div style="display: flex ; align-items: center; align-content: center;">
+                            <p style="margin-right:10px; font-size: 12px;">Copyright © 2024 ECOVITALI Ecuador</p>
+                            <a href="https://www.ecovitali.net" style="font-size: 12px;">www.ecovitali.net</a>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+
+</html>

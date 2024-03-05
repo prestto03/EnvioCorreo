@@ -5,11 +5,13 @@ package-lock.json
 
 # Variables de entorno
 # .env.example
+.env
 
 # Archivos de configuración
 *.iml
 *.vscode/
 .idea/
+
 
 notas.txt
 # Carpeta donde se almacenan los documentos enviados por el formulario.

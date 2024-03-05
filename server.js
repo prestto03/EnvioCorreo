@@ -103,7 +103,6 @@ const enviarCorreoYGuardarDatos = async (req, res, templateCliente, template, co
       const templatePath = path.join(__dirname, 'views/ecovitali', template);
       const templatePathCliente = path.join(__dirname, 'views/clientes', templateCliente);
       
-      // const htmlTemplate = await ejs.renderFile(templatePath, { nombre, telefono, email, comentario, divisionEmpresarial, enlaceWhatsApp, tema, tipo, divisionSeleccionada, ciudad, cv });
       const htmlTemplate = await ejs.renderFile(templatePath, { nombre, telefono, email, comentario, divisionEmpresarial, enlaceWhatsApp, tema, tipo, divisionSeleccionada, ciudad, cv });
       const htmlTemplateCliente = await ejs.renderFile(templatePathCliente, { nombre, telefono, email, comentario, divisionEmpresarial, enlaceWhatsApp, tema, tipo, divisionSeleccionada, ciudad, cv });
 
@@ -197,6 +196,35 @@ const enviarCorreoYGuardarDatos = async (req, res, templateCliente, template, co
   }
 };
 
+//  Función para guardar los correos a la db y enviar notificación al correo de Ecovitali
+const enviarCorreoSuscriptores = async (email) => {
+  try {
+    const templatePath = path.join(__dirname, 'views/ecovitali', 'suscriptores.ejs');
+    const htmlTemplate = await ejs.renderFile(templatePath, { email });
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER_1,
+        pass: process.env.EMAIL_PASS_1,
+      },
+    });
+
+    const mailSuscriptores = {
+      from: "Nuevo Suscriptor",
+      to: destinatario,
+      subject: "Nuevo Suscriptor",
+      html: htmlTemplate,
+    };
+
+    const info = await transporter.sendMail(mailSuscriptores);
+    console.log('Correo no enviado:', info.response);
+  } catch(error) {
+    console.log('Error al enviar el mail:', error);
+}};
+
+
+
 app.post('/enviar-correo/plagas', async (req, res) => {
   const correoCliente = req.body.email;
   await enviarCorreoYGuardarDatos(req, res, 'cliente-plagas.ejs', 'correo-plagas.ejs', correoCliente, cc);
@@ -236,6 +264,43 @@ app.post('/enviar-correo/trabaja-nosotros', upload.single('cv'), async (req, res
   const correoCliente = req.body.email;
   await enviarCorreoYGuardarDatos(req, res, 'cliente-trabaja-nosotros.ejs', 'trabaja-nosotros.ejs', correoCliente);
 });
+
+// Endpoint para guardar suscriptores
+app.post('/api/suscriptores', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: "No se ha proporcionado el campo de la dirección de correo electrónico." });
+    }
+
+    await guardarSuscriptor(email);
+    await enviarCorreoSuscriptores(email);
+
+    res.status(200).json({ mensaje: 'Correo guardado' });
+  } catch (error) {
+    console.log('Error al guardar datos', error);
+    res.status(500).json({ mensaje: 'Ocurrió un error al intentar guardar el correo.' });
+  }
+  // Función para guardar suscriptores en la base de datos
+  async function guardarSuscriptor(email) {
+    try {
+      await new Promise((resolve, reject) => {
+        connection.query('INSERT INTO correo_suscriptores (email) VALUES (?)', [email], (error, results) => {
+          if (error) {
+            reject(error);
+          } else {
+            console.log('Correo electrónico del suscriptor almacenado en la base de datos:', results);
+            resolve();
+          }
+        });
+      });
+    } catch (error) {
+      throw new Error("Error al almacenar el correo electrónico del suscriptor en la base de datos: " + error.message);
+    }
+  }
+});
+
+
 
 app.listen(PORT, () => {
   console.log(`Backend iniciado en http://localhost:${PORT}`);
